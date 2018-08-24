@@ -20,24 +20,17 @@ matchFile pattern file = do
   return result
 
 stdinMode :: [Char] -> IO()
-stdinMode pattern =
-  getLine >>= (\s ->
-    if null s then return ()
-              else putStr (if s == pattern then s else  "")  >> evaluate pattern >>= stdinMode)
-
-stdinDo :: [Char] -> IO()
-stdinDo pattern = do
-  line <- getLine
+stdinMode pattern = do
   eof <- isEOF
-  if eof --null line ||
-    then return ()
-    else if contain pattern line
+  if not eof
+    then getLine >>= (\line ->
+      if contain pattern line
         then evaluate pattern >>=
         (\x -> do
-          putStrLn x
-          return x >>= stdinDo )
-        else evaluate pattern >>= stdinDo
-
+          putStrLn line
+          return x >>= stdinMode )
+        else evaluate pattern >>= stdinMode)
+    else return ()
 
 printList :: [[Char]] -> IO()
 printList [] = return ()
@@ -45,8 +38,7 @@ printList (x:xs) = putStrLn x >> printList xs
 
 modeChange :: [Char] -> Maybe[Char] -> IO ()
 modeChange pattern (Just file) = matchFile pattern file >>= printList
-modeChange pattern Nothing = evaluate pattern >>= stdinDo
-
+modeChange pattern Nothing = evaluate pattern >>= stdinMode
 
 main :: IO()
 main = do
